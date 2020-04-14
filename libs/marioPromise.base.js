@@ -1,4 +1,4 @@
-// eg
+// eg:
 // let promise = new Promise((reslove, reject) => {
 
 // }).then((res) => {
@@ -6,22 +6,22 @@
 // })
 
 const Util = require('../Utils/utils')
-// definition promise status constant pending,fulfilled,rejected
+// definition promise state constant pending,fulfilled,rejected
 const PROMISE_STATUS_PENDING = Symbol('pending')
 const PROMISE_STATUS_FULFILLED = Symbol('fulfilled')
 const PROMISE_STATUS_REJECTED = Symbol('rejected')
 // MarioPromise is a library to realize Promise in JavaScript
 function MarioPromise(constructorFunc) {
+    // exception handling
     if (!Util.isFunction(constructorFunc)) {
-        throw new Error('the MarioPromise must input a function')
+        throw new Error(`MarioPromise resolver ${constructorFunc} is not a function`)
     }
-    // init MarioPromise status
+    // init MarioPromise state
     this.state = PROMISE_STATUS_PENDING
     this._successValue = undefined
     this._errorValue = undefined
     this.successMissionList = []
     this.errorMissionList = []
-    this.self = this
     // padding -> rejected
     function reslove(value) {
         if (this.state === PROMISE_STATUS_PENDING) {
@@ -43,9 +43,8 @@ function MarioPromise(constructorFunc) {
     } catch (error) {
         reject(error)
     }
-
 }
-// then is a function on MarioPromise prototype whitch return a new MarioPromise instance
+// then is a method on MarioPromise prototype whitch will return a new MarioPromise instance
 MarioPromise.prototype.then = function (onFulfilled, onRejected) {
     onFulfilled = Util.isFunction(onFulfilled) ? onFulfilled : (v) => {
         return v
@@ -57,59 +56,63 @@ MarioPromise.prototype.then = function (onFulfilled, onRejected) {
     if (this.state == PROMISE_STATUS_FULFILLED) {
         // it will be return a new MarioPromise instance
         return new MarioPromise((reslove, reject) => {
-            const value = onFulfilled(this._successValue)
-            if (value instanceof MarioPromise) {
-                console.log('promise type')
-                value.then(reslove, reject)
-            } else {
-                console.log('commoned type')
-                reslove(value)
+            try {
+                const value = onFulfilled(this._successValue)
+                if (value instanceof MarioPromise) {
+                    value.then(reslove, reject)
+                } else {
+                    reslove(this._successValue)
+                }
+            } catch (error) {
+                reject(error)
             }
         })
+
     }
     //  Promise now state is REJECTED
     if (this.state == PROMISE_STATUS_REJECTED) {
         // it will be return a new MarioPromise instance
         return new MarioPromise((reslove, reject) => {
-            const errorValue = onRejected(this._errorValue)
-            if (errorValue instanceof MarioPromise) {
-                errorValue.then(reslove, reject)
-            } else {
-                reject(value)
+            try {
+                const value = onFulfilled(this._errorValue)
+                if (value instanceof MarioPromise) {
+                    value.then(reslove, reject)
+                } else {
+                    reslove(this._errorValue)
+                }
+            } catch (error) {
+                reject(error)
             }
         })
     }
     //  Promise now state is PADDING
     if (this.state == PROMISE_STATUS_PENDING) {
         // it will be return a new MarioPromise instance
-        return new MarioPromise((reslove, reject) => {
-            if (onFulfilled) {
-                this.successMissionList.push(() => {
-                    try {
-                        const value = onFulfilled(this._successValue)
-                        if (value instanceof MarioPromise) {
-                            value.then(reslove, reject)
-                        } else {
-                            reslove(value)
-                        }
-                    } catch (error) {
-                        reject(error)
+        return new Promise((reslove, reject) => {
+            this.successMissionList.push(() => {
+                try {
+                    const value = onFulfilled(this._successValue)
+                    if (value instanceof MarioPromise) {
+                        value.then(reslove, reject)
+                    } else {
+                        reslove(this._successValue)
                     }
-                })
-            } else {
-                this.errorMissionList.push(() => {
-                    try {
-                        const value = onFulfilled(this._errorValue)
-                        if (value instanceof MarioPromise) {
-                            value.then(reslove, reject)
-                        } else {
-                            reject(value)
-                        }
-                    } catch (error) {
-                        reject(error)
+                } catch (error) {
+                    reject(error)
+                }
+            })
+            this.errorMissionList.push(() => {
+                try {
+                    const value = onFulfilled(this._errorValue)
+                    if (value instanceof MarioPromise) {
+                        value.then(reslove, reject)
+                    } else {
+                        reslove(this._errorValue)
                     }
-                })
-            }
+                } catch (error) {
+                    reject(error)
+                }
+            })
         })
     }
 }
