@@ -1,6 +1,6 @@
 # MarioPromise
 ## what is MarioPromise
-As we well know，Promise is a new solution for asynchronous programming. Promise can replace callback functions and events  programming method. this Library will achieve Promise container.
+As we well know，Promise is a new solution for asynchronous programming. Promise can replace callback functions and events  programming method. this Library will achieve Promise container base on Promise/A+ rule.
 ## How to use
 #### 1).install mario-promise
 ``` shell
